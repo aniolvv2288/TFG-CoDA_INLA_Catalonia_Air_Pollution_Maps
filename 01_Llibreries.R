@@ -5,6 +5,7 @@
 ################################################################################
  
 library(tidyverse) # Carrega paquets readr, dplyr, tidyr, tibble, ggpolt2
+library(stringr) # Netejar dades
 library(lubridate) # Format correcte dates
 library(DT) # Visualització base de dades
 library(robCompositions) # Mètodes d'imputació
@@ -16,7 +17,11 @@ library(giscoR) # Generació mapes
 library(sf) # Generació mapes
 library(geodata) # Extracció altitud
 library(factoextra) # PCA
+library(INLA) # Modelització amb INLA
+
 library(gmGeostats) # AED espacial
 library(gstat) 
+
+
 
 
