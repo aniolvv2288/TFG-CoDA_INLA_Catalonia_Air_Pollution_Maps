@@ -25,6 +25,8 @@ The main objective of this project is to apply Compositional Data Analysis (CoDA
 
 ## Authors
 
-Author: Aniol Vilamala Vidal
-Tutor: David Moriña Soler
+- Author: Aniol Vilamala Vidal
+- Tutor: David Moriña Soler
+
+
 Universitat Autònoma de Barcelona (UAB)
