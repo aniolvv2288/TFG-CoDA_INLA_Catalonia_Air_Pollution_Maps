@@ -275,9 +275,6 @@ covariables <- covariables %>%
 
 dades_finals <- readRDS("dades_finals.rds")
 
-dades_finals <- dades_finals %>%
-  dplyr::select(-OUTLIER, -OUTLIER_BIN, -OUTLIER_QUIN, -n_originals)
-
 XVPCA_2020_2024 <- read_csv("XVPCA_2020_2024.csv")
 
 info_estacions <- XVPCA_2020_2024 %>%
@@ -286,9 +283,18 @@ info_estacions <- XVPCA_2020_2024 %>%
 
 dades_finals <- dades_finals %>%
   left_join(info_estacions, by = "NOM ESTACIO") %>%
-  dplyr::select(ID, MUNICIPI, Comarca, `NOM ESTACIO`, ANY, MES, TIPUS_ESTACIO,
-                AREA_URBANA, ALTITUD, LONGITUD, LATITUD,
-                O3, NO2, CO, SO2, PM10, PM2.5)
+  mutate(
+    MUNICIPI = ifelse(
+      MUNICIPI == "Vandellòs i l'Hospitalet de l'",
+      "Vandellòs i l'Hospitalet de l'Infant",
+      MUNICIPI
+    )
+  ) %>%
+  dplyr::select(
+    ID, MUNICIPI, Comarca, `NOM ESTACIO`, ANY, MES, TIPUS_ESTACIO,
+    AREA_URBANA, ALTITUD, LONGITUD, LATITUD,
+    O3, NO2, CO, SO2, PM10, PM2.5
+  )
 
 ## AFEGIR COVARIABLES
 
@@ -314,5 +320,5 @@ dades_finals <- dades_finals %>%
   ) %>%
   relocate(SEASON, .after = MES)
 
-#saveRDS(dades_finals, "dades_finals.rds")
+# saveRDS(dades_finals, "dades_finals.rds")
 
