@@ -264,7 +264,23 @@ covariables <- covariables %>%
 
 covariables <- covariables %>%
   dplyr::select(Codi, Nom, Any, Mes, Altitud, AREA_URBANA, Temp_max, Temp_min, 
-                Pluja, x, y)
+                Pluja, x, y) %>%
+  mutate(
+    SEASON = case_when(
+      Mes %in% c(12, 1, 2) ~ "Hivern",
+      Mes %in% c(3, 4, 5)  ~ "Primavera",
+      Mes %in% c(6, 7, 8)  ~ "Estiu",
+      Mes %in% c(9, 10, 11) ~ "Tardor"
+    ),
+    SEASON = factor(
+      SEASON,
+      levels = c("Hivern", "Primavera", "Estiu", "Tardor"),
+      ordered = TRUE
+    )
+  ) %>%
+  relocate(SEASON, .after = Mes)
+
+# saveRDS(covariables, "covariables.rds")
 
 
 ################################################################################
@@ -305,19 +321,6 @@ dades_finals <- dades_finals %>%
     by = c("MUNICIPI" = "Nom", "ANY" = "Any", "MES" = "Mes")
   ) %>%
   relocate(Temp_max, Temp_min, Pluja, .after = ALTITUD) %>%
-  mutate(
-    SEASON = case_when(
-      MES %in% c(12, 1, 2) ~ "Hivern",
-      MES %in% c(3, 4, 5)  ~ "Primavera",
-      MES %in% c(6, 7, 8)  ~ "Estiu",
-      MES %in% c(9, 10, 11) ~ "Tardor"
-    ),
-    SEASON = factor(
-      SEASON,
-      levels = c("Hivern", "Primavera", "Estiu", "Tardor"),
-      ordered = TRUE
-    )
-  ) %>%
   relocate(SEASON, .after = MES)
 
 # saveRDS(dades_finals, "dades_finals.rds")
