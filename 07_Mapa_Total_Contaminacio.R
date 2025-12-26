@@ -138,10 +138,19 @@ df_alt <- df_alt %>%
          Var2 = y,
          Altitud_raster = Altitud)
 
+# dp <- dp %>%
+#   left_join(df_alt, by = c("Var1","Var2")) %>%
+#   filter(!is.na(Altitud_raster)) %>%
+#   filter(Altitud_raster >= 0) %>%
+#   distinct(Var1, Var2, .keep_all = TRUE) %>%
+#   rename(Altitud = Altitud_raster)
+
 dp <- dp %>%
-  left_join(df_alt, by = c("Var1","Var2")) %>%
+  left_join(df_alt, by = c("Var1", "Var2")) %>%
+  mutate(
+    Altitud_raster = ifelse(is.na(Altitud_raster), NA, pmax(Altitud_raster, 0))
+  ) %>%
   filter(!is.na(Altitud_raster)) %>%
-  filter(Altitud_raster >= 0) %>%
   distinct(Var1, Var2, .keep_all = TRUE) %>%
   rename(Altitud = Altitud_raster)
 
@@ -244,8 +253,7 @@ for (mes in MESOS) {
         ALTITUD     = d$ALTITUD,     
         MUNICIPI    = as.factor(d$MUNICIPI),
         TEMP_MAX    = d$Temp_max,
-        TEMP_MIN    = d$Temp_min,
-        PLUJA       = d$Pluja
+        TEMP_MIN    = d$Temp_min
       ),
       s = indexs
     )
@@ -263,10 +271,9 @@ for (mes in MESOS) {
       data.frame(
         b0          = 1,
         ALTITUD     = dp_mes$Altitud,
-        MUNICIPI    = factor(dp_mes$Nom, levels = levels(d$MUNICIPI)),
+        MUNICIPI    = factor(dp_mes$Nom),
         TEMP_MAX    = dp_mes$Temp_max,
-        TEMP_MIN    = dp_mes$Temp_min,
-        PLUJA       = dp_mes$Pluja
+        TEMP_MIN    = dp_mes$Temp_min
       ),
       s = indexs
     )
@@ -374,7 +381,6 @@ for (mes in MESOS) {
     effects = list(
       data.frame(b0 = rep(1, nrow(train)), 
                  ALTITUD = train$ALTITUD,
-                 PLUJA = train$Pluja,
                  MUNICIPI = as.factor(train$MUNICIPI),
                  TEMP_MAX = train$Temp_max,
                  TEMP_MIN = train$Temp_min),
@@ -388,8 +394,7 @@ for (mes in MESOS) {
     A = list(1, App),
     effects = list(
       data.frame(b0 = rep(1, nrow(test)), 
-                 ALTITUD = test$ALTITUD,
-                 PLUJA = test$Pluja,              
+                 ALTITUD = test$ALTITUD,         
                  MUNICIPI = as.factor(test$MUNICIPI),
                  TEMP_MAX = test$Temp_max,
                  TEMP_MIN = test$Temp_min),
@@ -469,15 +474,15 @@ for (mes in MESOS) {
   dp_plot <- dp_mes
   names(dp_plot)[1:3] <- c("x", "y", "time")
   
-  dp_plot$pred_mean <- resultat$summary.fitted.values[index, "mean"]
-  dp_plot$pred_ll   <- resultat$summary.fitted.values[index, "0.025quant"]
-  dp_plot$pred_ul   <- resultat$summary.fitted.values[index, "0.975quant"]
+  dp_plot$p_mitj <- resultat$summary.fitted.values[index, "mean"]
+  dp_plot$p_inf   <- resultat$summary.fitted.values[index, "0.025quant"]
+  dp_plot$p_sup   <- resultat$summary.fitted.values[index, "0.975quant"]
   
   # MAPA
   dpm <- reshape2::melt(
     dp_plot,
     id.vars = c("x", "y", "time"),
-    measure.vars = c("pred_mean", "pred_ll", "pred_ul")
+    measure.vars = c("p_mitj", "p_inf", "p_sup")
   )
   
   dpm <- dpm %>%
@@ -488,6 +493,9 @@ for (mes in MESOS) {
       time == 4 ~ 2023,
       time == 5 ~ 2024
     ))
+  
+  print(max(dpm$value))
+  print(min(dpm$value))
   
   print(
     ggplot(m) +
@@ -502,7 +510,7 @@ for (mes in MESOS) {
       scale_fill_gradientn(
         name = "Contaminació",
         colours = c("green", "yellow", "red"),
-        limits = c(0, 14),
+        limits = c(-0.2, 12),
         oob = scales::squish
       ) +
       theme_bw()
