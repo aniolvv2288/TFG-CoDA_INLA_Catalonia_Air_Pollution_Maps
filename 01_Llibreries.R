@@ -13,15 +13,11 @@ library(compositions) # Detecció outliers, transformacions CLR, ILR i descripti
 library(reshape2) # Gràfics
 library(kableExtra) # Generació taules
 library(knitr) # Generació taules
+library(forcats)
 library(giscoR) # Generació mapes 
 library(sf) # Generació mapes
 library(geodata) # Extracció altitud
+library(terra) 
 library(factoextra) # PCA
 library(INLA) # Modelització amb INLA
-
-library(gmGeostats) # AED espacial
-library(gstat) 
-
-
-
 
