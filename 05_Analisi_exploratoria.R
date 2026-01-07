@@ -65,7 +65,6 @@ levels(grup_combinat) <- c(
   "Industrial-Urban"
 )
 
-
 fviz_pca_ind(pca,
              geom.ind = "point",
              col.ind = grup_combinat,     
@@ -75,93 +74,152 @@ fviz_pca_ind(pca,
              pointshape = 16) +
   ggplot2::ggtitle("CoDA PCA: casos segons tipus d’estació i àrea urbana")        
 
-################################################################################
-# ----- TERNARY DIAGRAMS -----
-################################################################################
-
-X_2 <- X %>% 
-  dplyr::select(PM10, O3, NO2)
-
-
-plot(acomp(X_2), pca=TRUE, col.pca="red", axes=TRUE, col = as.numeric(dades$AREA_URBANA))
-
-
-wind.cf1 = X %>% acomp %>% ClusterFinder1
-
-sort(wind.cf1$typeTbl, decreasing = T)
 
 ################################################################################
-# ----- NORMALITAT DE LES DADES -----
+# ----- T-SPACE -----
 ################################################################################
 
-X %>% acomp %>% qqnorm
+## BALANCES ILR
+
+d <- dades_finals
+
+V <- matrix(0, nrow = 6, ncol = 5)
+rownames(V) <- contaminants
+colnames(V) <- paste0("B", 1:5)
+
+V["SO2", "B1"] <-  1
+V[c("NO2","PM10","PM2.5","O3","CO"), "B1"] <- -1
+
+V[c("NO2","O3","CO"), "B2"] <-  1
+V[c("PM10","PM2.5"), "B2"] <- -1
+
+V[c("NO2","O3"), "B3"] <-  1
+V["CO", "B3"] <- -1
+
+V["NO2", "B4"] <-  1
+V["O3",  "B4"] <- -1
+
+V["PM2.5", "B5"] <-  1
+V["PM10",  "B5"] <- -1
+
+V
+
+X <- d %>%
+  dplyr::select(all_of(contaminants)) %>%
+  acomp
+
+bal_base <- gsi.buildilrBase(V)
+
+crossprod(bal_base) 
+
+ilr_bal <- ilr(X, V=bal_base)
+
+## TOTAL T-SPACE
+
+X <- dades_finals %>%
+  dplyr::select(all_of(contaminants))
+
+D <- ncol(X)
+Total_basal <- (1 / sqrt(D)) * rowSums(log(X))
+
+d$Total_basal <- Total_basal
+
 
 ################################################################################
-# ----- DESCRIPTIVA DE LA TRASNFORMACIÓ ILR -----
+# ----- RESUM T-SPACE -----
 ################################################################################
 
-## ----- DESCRPIPTIVA BÀSICA ----- 
+ilr_df <- as.data.frame(ilr_bal)
 
-X_ilr <- compositions::ilr(as.matrix(X))
+d$id <- seq_len(nrow(d))
+ilr_df$id <- seq_len(nrow(ilr_df))
 
-sum_mat <- summary(X_ilr)
-summary_ilr <- as.data.frame(t(sum_mat))  
-summary_ilr$Variance <- apply(X_ilr, 2, var, na.rm = TRUE)
+d <- d %>% 
+  left_join(ilr_df, by = "id") %>%
+  dplyr::select(-all_of(contaminants), -id) %>%
+  rename(Total = Total_basal)
 
-summary_ilr$Coordinate <- rownames(summary_ilr)
-
-summary_ilr <- summary_ilr %>%
-  dplyr::select(Coordinate, Min., `1st Qu.`, Median, Mean, `3rd Qu.`, Max., Variance) %>%
-  dplyr::rename(
-    Coordenada = Coordinate,
-    Mín. = Min.,
-    Q1 = `1st Qu.`,
-    Mediana = Median,
-    Mitjana = Mean,
-    Q3 = `3rd Qu.`,
-    Màx. = Max.,
-    Variància = Variance
+taula_stats <- d %>%
+  select(B1, B2, B3, B4, B5, Total) %>%
+  summarise(
+    across(
+      everything(),
+      list(
+        Min = ~min(.x, na.rm = TRUE),
+        Q1 = ~quantile(.x, 0.25, na.rm = TRUE),
+        Median = ~median(.x, na.rm = TRUE),
+        Mean = ~mean(.x, na.rm = TRUE),
+        Q3 = ~quantile(.x, 0.75, na.rm = TRUE),
+        Max = ~max(.x, na.rm = TRUE),
+        SD = ~sd(.x, na.rm = TRUE)
+      ),
+      .names = "{.col}_{.fn}"
+    )
+  ) %>%
+  tidyr::pivot_longer(
+    everything(),
+    names_to = c("Variable", "Estadistic"),
+    names_sep = "_",
+    values_to = "Valor"
+  ) %>%
+  tidyr::pivot_wider(
+    names_from = Estadistic,
+    values_from = Valor
   )
 
-summary_ilr_fmt <- summary_ilr %>%
-  mutate(across(where(is.numeric),
-                ~ cell_spec(formatC(.x, format = "f", digits = 2),
-                            format = "html"))) %>%
-  dplyr::select(-Coordenada)
-
-kable(summary_ilr_fmt, format = "html", escape = FALSE, align = "c") %>%
-  kable_styling(full_width = FALSE,
-                bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
-  row_spec(0, bold = TRUE, color = "black", background = "lightblue") %>%
-  column_spec(1:ncol(summary_ilr_fmt), width = "4em") %>%
-  column_spec(1, bold = TRUE, color = "black", background = "lightblue")
-
-## ----- NORMALITAT DE LA TRANSFORMACIÓ -----
-
-pairs(acomp(X))
-
-pairs(
-  acomp(X),
-  panel = vp.lrdensityplot,      
-  upper.panel = vp.lrdensityplot,
-  lower.panel = vp.lrboxplot,    
-  diag.panel = NULL,             
-  col = 4,                      
-  alpha = 0.05,                  
-  main = "Pairs plot composicional dels contaminants atmosfèrics"
-)
-
-pairs(
-  acomp(X),
-  panel = vp.lrdensityplot,
-  upper.panel = vp.lrboxplot,
-  labels = contaminants,
-  cex.labels = 1.2,
-  font.labels = 2,
-  gap = 0.5,
-  row1attop = TRUE,
-  main = "Relacions log-ratio entre contaminants (CoDA)"
-)
+taula_stats
 
 
+################################################################################
+# ----- EVOLUCIÓ COORDENADES DEL T-SPACE SEGONS EL MES I ANY -----
+################################################################################
 
+d_plot <- d %>%
+  select(ANY, MES, Total, B1, B2, B3, B4, B5) %>%
+  mutate(
+    MES = factor(MES, levels = 1:12,
+                 labels = c("Gen","Feb","Mar","Abr","Mai","Jun",
+                            "Jul","Ago","Set","Oct","Nov","Des"))
+  ) %>%
+  rename(
+    "Balança 1" = B1,
+    "Balança 2" = B2,
+    "Balança 3" = B3,
+    "Balança 4" = B4,
+    "Balança 5" = B5
+  ) %>%
+  pivot_longer(
+    cols = c(Total, `Balança 1`, `Balança 2`, `Balança 3`, `Balança 4`, `Balança 5`),
+    names_to = "Variable",
+    values_to = "Valor"
+  ) %>%
+  group_by(Variable, ANY, MES) %>%       
+  summarise(Valor = mean(Valor), .groups = "drop")
+
+ggplot(d_plot, aes(x = MES, y = Valor, color = factor(ANY), group = ANY)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  
+  facet_wrap(~ Variable, scales = "free_y", ncol = 3) +
+  scale_color_viridis_d(option = "C", end = 0.85) +
+  
+  labs(
+    title = "Evolució mensual de les coordenades del T-space segons l'any",
+    x = "Mes",
+    y = "Valor mitjà",
+    color = "Any"
+  ) +
+  
+  theme_bw(base_size = 13) +
+  theme(
+    legend.position = "bottom",     
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_blank(),
+    strip.background = element_rect(fill = "grey90", color = NA),
+    strip.text = element_text(face = "bold"),
+    plot.title = element_text(face = "bold", size = 15),
+    plot.subtitle = element_text(size = 12),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
