@@ -4,7 +4,7 @@
 # ----- LLIBRERIES EMPRADES EN EL PROJECTE -----
 ################################################################################
  
-library(tidyverse) # Carrega paquets readr, dplyr, tidyr, tibble, ggpolt2
+library(tidyverse) # Carrega paquets readr, dplyr, tidyr, tibble, forcats, ggpolt2
 library(stringr) # Netejar dades
 library(lubridate) # Format correcte dates
 library(DT) # Visualització base de dades
@@ -13,11 +13,10 @@ library(compositions) # Detecció outliers, transformacions CLR, ILR i descripti
 library(reshape2) # Gràfics
 library(kableExtra) # Generació taules
 library(knitr) # Generació taules
-library(forcats)
 library(giscoR) # Generació mapes 
 library(sf) # Generació mapes
-library(geodata) # Extracció altitud
-library(terra) 
+library(terra) # Obtenció raster altitud
+library(geodata) # Manipulació raster altitud
 library(factoextra) # PCA
 library(INLA) # Modelització amb INLA
 
