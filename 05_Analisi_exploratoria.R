@@ -223,3 +223,4 @@ ggplot(d_plot, aes(x = MES, y = Valor, color = factor(ANY), group = ANY)) +
     plot.subtitle = element_text(size = 12),
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
+
