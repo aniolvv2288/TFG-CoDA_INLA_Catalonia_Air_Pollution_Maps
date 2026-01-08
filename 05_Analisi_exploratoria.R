@@ -224,3 +224,63 @@ ggplot(d_plot, aes(x = MES, y = Valor, color = factor(ANY), group = ANY)) +
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 
+
+################################################################################
+# ----- PACF DE LES COORDENADES DEL T-SPACE -----
+################################################################################
+
+vars <- c("Total", "B1", "B2", "B3", "B4", "B5")
+
+get_pacf_df <- function(x, name, max_lag = 23) {
+  pac <- pacf(x, plot = FALSE, lag.max = max_lag)
+  tibble(
+    Variable = name,
+    Lag = pac$lag,
+    PACF = pac$acf
+  )
+}
+
+pacf_plot_df <- map_dfr(
+  vars,
+  ~ get_pacf_df(d[[.x]], .x)
+) %>%
+  mutate(
+    Variable = recode(Variable,
+                      "B1" = "Balança 1",
+                      "B2" = "Balança 2",
+                      "B3" = "Balança 3",
+                      "B4" = "Balança 4",
+                      "B5" = "Balança 5")
+  )
+
+n <- nrow(d)
+sig <- 1 / sqrt(n)
+
+ggplot(pacf_plot_df, aes(x = Lag, y = PACF)) +
+  geom_hline(yintercept = sig, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = -sig, linetype = "dashed", color = "red") +
+  
+  geom_segment(aes(xend = Lag, yend = 0), linewidth = 0.5, color = "#2C3E50") +
+  geom_point(size = 1, color = "#2C3E50") +
+  
+  facet_wrap(~ Variable, ncol = 3) +
+  
+  scale_y_continuous(limits = c(-0.2, 1)) +
+  
+  labs(
+    title = "PACF de les coordenades del T-space",
+    x = "Retard (lag)",
+    y = "PACF"
+  ) +
+  
+  theme_bw(base_size = 13) +
+  theme(
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_blank(),
+    strip.background = element_rect(fill = "grey90", color = NA),
+    strip.text = element_text(face = "bold"),
+    plot.title = element_text(face = "bold", size = 15)
+  )
+
