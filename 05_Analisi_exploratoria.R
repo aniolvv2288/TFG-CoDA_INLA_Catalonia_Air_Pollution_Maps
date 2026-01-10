@@ -171,7 +171,7 @@ taula_stats
 
 
 ################################################################################
-# ----- EVOLUCIÓ COORDENADES DEL T-SPACE SEGONS EL MES I ANY -----
+# ----- EVOLUCIÓ COORDENADES DEL T-SPACE SEGONS EL MES I L'ANY -----
 ################################################################################
 
 d_plot <- d %>%
@@ -193,7 +193,13 @@ d_plot <- d %>%
     names_to = "Variable",
     values_to = "Valor"
   ) %>%
-  group_by(Variable, ANY, MES) %>%       
+  mutate(
+    Variable = factor(
+      Variable,
+      levels = c("Total", "Balança 1", "Balança 2", "Balança 3", "Balança 4", "Balança 5")
+    )
+  ) %>%
+  group_by(Variable, ANY, MES) %>%
   summarise(Valor = mean(Valor), .groups = "drop")
 
 ggplot(d_plot, aes(x = MES, y = Valor, color = factor(ANY), group = ANY)) +
