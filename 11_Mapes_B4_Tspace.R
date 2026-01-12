@@ -118,9 +118,9 @@ coo <- cbind(d$x, d$y)
 bnd <- fmesher::fm_nonconvex_hull(st_coordinates(m)[, 1:2])
 
 mesh <- fmesher::fm_mesh_2d_inla(loc = coo, boundary = bnd,
-                                 max.edge = c(30000, 70000),
-                                 cutoff = 7000)
+                                 max.edge = c(30000, 70000), cutoff = 1500)
 
+mesh$n           
 par(mfrow=c(1,1))
 plot(mesh, main = "Mesh")
 points(coo, col = "red", pch = 20)
@@ -283,16 +283,26 @@ formula <- y ~ -1 + b0 + ALTITUD + TEMP_MAX + TEMP_MIN +
     control.group = list(model = "ar1", hyper = rprior)) + 
   f(MUNICIPI, model = "iid")
 
-resultat <- inla(
-  formula,
-  data = inla.stack.data(stk.full),
-  control.predictor = list(compute = TRUE, A = inla.stack.A(stk.full)),
-  control.compute   = list(dic = TRUE, waic = TRUE, config = TRUE)
-)
-
-saveRDS(resultat, "model_mes_any_inla_b4.rds")
-
-# resultat <- readRDS("model_mes_any_inla_b4.rds")
+if (!file.exists("model_mes_any_inla_b4.rds")) {
+  resultat <- inla(
+    formula,
+    data = inla.stack.data(stk.full),
+    control.predictor = list(
+      compute = TRUE,
+      A = inla.stack.A(stk.full)
+    ),
+    control.compute = list(
+      dic = TRUE,
+      waic = TRUE,
+      config = TRUE
+    )
+  )
+  
+  saveRDS(resultat, "model_mes_any_inla_b4.rds")
+  
+} else {
+  resultat <- readRDS("model_mes_any_inla_b4.rds")
+}
 
 
 ################################################################################
@@ -408,16 +418,26 @@ formula <- y ~ -1 + b0 + ALTITUD + TEMP_MAX + TEMP_MIN +
     control.group = list(model = "ar1", hyper = prior_any)) + 
   f(MUNICIPI, model = "iid")
 
-p.res <- inla(
-  formula,
-  data = inla.stack.data(stk.f),
-  control.predictor = list(compute = TRUE, A = inla.stack.A(stk.f)),
-  control.compute   = list(dic = TRUE, waic = TRUE, config = TRUE)
-)
-
-saveRDS(p.res, "val_model_mes_any_inla_b4")
-
-# p.res <- readRDS("val_model_mes_any_inla_b4")
+if (!file.exists("val_model_mes_any_inla_b4.rds")) {
+  p.res <- inla(
+    formula,
+    data = inla.stack.data(stk.f),
+    control.predictor = list(
+      compute = TRUE,
+      A = inla.stack.A(stk.f)
+    ),
+    control.compute = list(
+      dic = TRUE,
+      waic = TRUE,
+      config = TRUE
+    )
+  )
+  
+  saveRDS(p.res, "val_model_mes_any_inla_b4.rds")
+  
+} else {
+  p.res <- readRDS("val_model_mes_any_inla_b4.rds")
+}
 
 
 ## PREDICCIONS
@@ -468,30 +488,37 @@ ggplot(df_plot, aes(x = obs, y = pred)) +
 # ----- MAPA -----
 ################################################################################
 
-index <- inla.stack.index(stack = stk.full, tag = "pred")$data
-
-dp <- data.frame(dp)
-names(dp) <- c("x", "y", "any", "mes", "time")
-
-dp$pred_mean <- resultat$summary.fitted.values[index, "mean"]
-dp$pred_ll <- resultat$summary.fitted.values[index, "0.025quant"]
-dp$pred_ul <- resultat$summary.fitted.values[index, "0.975quant"]
-
-dpm <- reshape2::melt(dp,
-                      id.vars = c("x", "y", "time"),
-                      measure.vars = c("pred_mean", "pred_ll", "pred_ul"))
-
-t0 <- min(dpm$time)
-
-dpm2_b4 <- dpm %>%
-  mutate(
-    mes_index = time - t0,
-    date = as.Date("2020-01-01") %m+% months(mes_index)
+if (!file.exists("prediccio_model_inla_mes_any_b4.rds")) {
+  
+  index <- inla.stack.index(stack = stk.full, tag = "pred")$data
+  
+  dp <- data.frame(dp)
+  names(dp) <- c("x", "y", "any", "mes", "time")
+  
+  dp$pred_mean <- resultat$summary.fitted.values[index, "mean"]
+  dp$pred_ll   <- resultat$summary.fitted.values[index, "0.025quant"]
+  dp$pred_ul   <- resultat$summary.fitted.values[index, "0.975quant"]
+  
+  dpm <- reshape2::melt(
+    dp,
+    id.vars = c("x", "y", "time"),
+    measure.vars = c("pred_mean", "pred_ll", "pred_ul")
   )
-
-saveRDS(dpm2_b4, "prediccio_model_inla_mes_any_b4.rds")
-
-# dpm2 <- readRDS("prediccio_model_inla_mes_any_b4.rds")
+  
+  t0 <- min(dpm$time)
+  
+  dpm2 <- dpm %>%
+    mutate(
+      mes_index = time - t0,
+      date = as.Date("2020-01-01") %m+% months(mes_index)
+    )
+  
+  saveRDS(dpm2, "prediccio_model_inla_mes_any_b4.rds")
+  
+} else {
+  
+  dpm2 <- readRDS("prediccio_model_inla_mes_any_b4.rds")
+}
 
 dpm_gener <- dpm2 %>%
   filter(month(date) == 1) %>%
