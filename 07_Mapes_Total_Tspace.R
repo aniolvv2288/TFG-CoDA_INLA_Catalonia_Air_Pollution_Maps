@@ -77,9 +77,9 @@ coo <- cbind(d$x, d$y)
 bnd <- fmesher::fm_nonconvex_hull(st_coordinates(m)[, 1:2])
 
 mesh <- fmesher::fm_mesh_2d_inla(loc = coo, boundary = bnd,
-                                 max.edge = c(30000, 70000),
-                                 cutoff = 7000)
+                                 max.edge = c(30000, 70000), cutoff = 1500)
 
+mesh$n
 par(mfrow=c(1,1))
 plot(mesh, main = "Mesh")
 points(coo, col = "red", pch = 20)
