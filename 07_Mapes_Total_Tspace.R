@@ -242,16 +242,26 @@ formula <- y ~ -1 + b0 + ALTITUD + TEMP_MAX + TEMP_MIN +
     control.group = list(model = "ar1", hyper = rprior)) + 
   f(MUNICIPI, model = "iid")
 
-# resultat <- inla(
-#   formula,
-#   data = inla.stack.data(stk.full),
-#   control.predictor = list(compute = TRUE, A = inla.stack.A(stk.full)),
-#   control.compute   = list(dic = TRUE, waic = TRUE, config = TRUE)
-# )
-# 
-# saveRDS(resultat, "model_mes_any_inla.rds")
-
-resultat <- readRDS("model_mes_any_inla.rds")
+if (!file.exists("model_mes_any_inla.rds")) {
+  resultat <- inla(
+    formula,
+    data = inla.stack.data(stk.full),
+    control.predictor = list(
+      compute = TRUE,
+      A = inla.stack.A(stk.full)
+    ),
+    control.compute = list(
+      dic = TRUE,
+      waic = TRUE,
+      config = TRUE
+    )
+  )
+  
+  saveRDS(resultat, "model_mes_any_inla.rds")
+  
+} else {
+  resultat <- readRDS("model_mes_any_inla.rds")
+}
 
 summary(resultat)
 
@@ -369,16 +379,26 @@ formula <- y ~ -1 + b0 + ALTITUD + TEMP_MAX + TEMP_MIN +
     control.group = list(model = "ar1", hyper = prior_any)) + 
   f(MUNICIPI, model = "iid")
 
-p.res <- readRDS("val_model_mes_any_inla")
-
-# p.res <- inla(
-#   formula,
-#   data = inla.stack.data(stk.f),
-#   control.predictor = list(compute = TRUE, A = inla.stack.A(stk.f)),
-#   control.compute   = list(dic = TRUE, waic = TRUE, config = TRUE)
-# )
-
-# saveRDS(p.res, "val_model_mes_any_inla")
+if (!file.exists("val_model_mes_any_inla.rds")) {
+  p.res <- inla(
+    formula,
+    data = inla.stack.data(stk.f),
+    control.predictor = list(
+      compute = TRUE,
+      A = inla.stack.A(stk.f)
+    ),
+    control.compute = list(
+      dic = TRUE,
+      waic = TRUE,
+      config = TRUE
+    )
+  )
+  
+  saveRDS(p.res, "val_model_mes_any_inla.rds")
+  
+} else {
+  p.res <- readRDS("val_model_mes_any_inla.rds")
+}
 
 
 ## PREDICCIONS
@@ -429,30 +449,37 @@ ggplot(df_plot, aes(x = obs, y = pred)) +
 # ----- MAPA -----
 ################################################################################
 
-index <- inla.stack.index(stack = stk.full, tag = "pred")$data
-
-dp <- data.frame(dp)
-names(dp) <- c("x", "y", "any", "mes", "time")
-
-dp$pred_mean <- resultat$summary.fitted.values[index, "mean"]
-dp$pred_ll <- resultat$summary.fitted.values[index, "0.025quant"]
-dp$pred_ul <- resultat$summary.fitted.values[index, "0.975quant"]
-
-dpm <- reshape2::melt(dp,
-                      id.vars = c("x", "y", "time"),
-                      measure.vars = c("pred_mean", "pred_ll", "pred_ul"))
-
-t0 <- min(dpm$time)
-
-dpm2 <- dpm %>%
-  mutate(
-    mes_index = time - t0,
-    date = as.Date("2020-01-01") %m+% months(mes_index)
+if (!file.exists("prediccio_model_inla_mes_any.rds")) {
+  
+  index <- inla.stack.index(stack = stk.full, tag = "pred")$data
+  
+  dp <- data.frame(dp)
+  names(dp) <- c("x", "y", "any", "mes", "time")
+  
+  dp$pred_mean <- resultat$summary.fitted.values[index, "mean"]
+  dp$pred_ll   <- resultat$summary.fitted.values[index, "0.025quant"]
+  dp$pred_ul   <- resultat$summary.fitted.values[index, "0.975quant"]
+  
+  dpm <- reshape2::melt(
+    dp,
+    id.vars = c("x", "y", "time"),
+    measure.vars = c("pred_mean", "pred_ll", "pred_ul")
   )
-
-# saveRDS(dpm2, "prediccio_model_inla_mes_any.rds")
-
-dpm2 <- readRDS("prediccio_model_inla_mes_any.rds")
+  
+  t0 <- min(dpm$time)
+  
+  dpm2 <- dpm %>%
+    mutate(
+      mes_index = time - t0,
+      date = as.Date("2020-01-01") %m+% months(mes_index)
+    )
+  
+  saveRDS(dpm2, "prediccio_model_inla_mes_any.rds")
+  
+} else {
+  
+  dpm2 <- readRDS("prediccio_model_inla_mes_any.rds")
+}
 
 dpm_gener <- dpm2 %>%
   filter(month(date) == 1) %>%
@@ -473,21 +500,21 @@ ggplot(m) +
     cols = vars(variable),
     labeller = labeller(
       variable = c(
-        pred_mean = "Mitjana \nContaminació",
-        pred_ll   = "Límit Inf. \n(IC 95%)",
-        pred_ul   = "Límit Sup. \n(IC 95%)"
+        pred_mean = "Contaminació\nmitjana",
+        pred_ll   = "Límit inferior de \ncontaminació\n(IC 95%)",
+        pred_ul   = "Límit superior de \ncontaminació\n(IC 95%)"
       )
     )
   ) +
   scale_fill_gradientn(
     name = "Coordenades \ntotal T-space",
     colours = c("green", "yellow", "red"),
-    limits = c(min(dpm2$value), max(dpm2$value)),
+    limits = c(2,10),
     breaks = scales::pretty_breaks(n = 5),
     oob = scales::squish
   ) +
   labs(
-    title = "Contaminació gener 2020–2024",
+    title = "Contaminació atmosfèrica al gener (2020-2024)",
     x = "", y = ""
   ) +
   theme_bw() +
@@ -496,57 +523,12 @@ ggplot(m) +
     legend.box = "vertical",
     strip.background = element_rect(fill = "grey90"),
     strip.text = element_text(size = 10),
-    panel.spacing = unit(0, "lines")
-  ) +
-  guides(fill = guide_colourbar(title.position = "top"))
-
-
-dpm_setembre <- dpm2 %>%
-  filter(month(date) == 9) %>%
-  mutate(
-    Any = year(date),
-    variable = factor(variable, levels = c("pred_mean", "pred_ll", "pred_ul"))
-  )
-
-ggplot(m) +
-  geom_sf() +
-  coord_sf(datum = NA) +
-  geom_tile(
-    data = dpm_setembre,
-    aes(x = x, y = y, fill = value)
-  ) +
-  facet_grid(
-    rows = vars(Any),
-    cols = vars(variable),
-    labeller = labeller(
-      variable = c(
-        pred_mean = "Mitjana \nContaminació",
-        pred_ll   = "Límit Inf. \n(IC 95%)",
-        pred_ul   = "Límit Sup. \n(IC 95%)"
-      )
+    panel.spacing = unit(0, "lines"),
+    plot.title = element_text(
+      size = 15
     )
   ) +
-  scale_fill_gradientn(
-    name = "Coordenades \ntotal T-space",
-    colours = c("green", "yellow", "red"),
-    limits = c(min(dpm2$value), max(dpm2$value)),
-    breaks = scales::pretty_breaks(n = 5),
-    oob = scales::squish
-  ) +
-  labs(
-    title = "Contaminació setembre 2020–2024",
-    x = "", y = ""
-  ) +
-  theme_bw() +
-  theme(
-    legend.position = "right",
-    legend.box = "vertical",
-    strip.background = element_rect(fill = "grey90"),
-    strip.text = element_text(size = 10),
-    panel.spacing = unit(0, "lines")
-  ) +
   guides(fill = guide_colourbar(title.position = "top"))
-
 
 
 dpm_febrer <- dpm2 %>%
@@ -568,21 +550,21 @@ ggplot(m) +
     cols = vars(variable),
     labeller = labeller(
       variable = c(
-        pred_mean = "Mitjana \nContaminació",
-        pred_ll   = "Límit Inf. \n(IC 95%)",
-        pred_ul   = "Límit Sup. \n(IC 95%)"
+        pred_mean = "Contaminació\nmitjana",
+        pred_ll   = "Límit inferior\n(IC 95%)",
+        pred_ul   = "Límit superior\n(IC 95%)"
       )
     )
   ) +
   scale_fill_gradientn(
     name = "Coordenades \ntotal T-space",
     colours = c("green", "yellow", "red"),
-    limits = c(min(dpm2$value), max(dpm2$value)),
+    limits = c(2,10),
     breaks = scales::pretty_breaks(n = 5),
     oob = scales::squish
   ) +
   labs(
-    title = "Contaminació febrer 2020–2024",
+    title = "Contaminació atmosfèrica al febrer (2020-2024)",
     x = "", y = ""
   ) +
   theme_bw() +
@@ -591,7 +573,10 @@ ggplot(m) +
     legend.box = "vertical",
     strip.background = element_rect(fill = "grey90"),
     strip.text = element_text(size = 10),
-    panel.spacing = unit(0, "lines")
+    panel.spacing = unit(0, "lines"),
+    plot.title = element_text(
+      size = 15
+    )
   ) +
   guides(fill = guide_colourbar(title.position = "top"))
 
@@ -615,21 +600,21 @@ ggplot(m) +
     cols = vars(variable),
     labeller = labeller(
       variable = c(
-        pred_mean = "Mitjana \nContaminació",
-        pred_ll   = "Límit Inf. \n(IC 95%)",
-        pred_ul   = "Límit Sup. \n(IC 95%)"
+        pred_mean = "Contaminació\nmitjana",
+        pred_ll   = "Límit inferior de \ncontaminació\n(IC 95%)",
+        pred_ul   = "Límit superior de \ncontaminació\n(IC 95%)"
       )
     )
   ) +
   scale_fill_gradientn(
     name = "Coordenades \ntotal T-space",
     colours = c("green", "yellow", "red"),
-    limits = c(min(dpm2$value), max(dpm2$value)),
+    limits = c(2,10),
     breaks = scales::pretty_breaks(n = 5),
     oob = scales::squish
   ) +
   labs(
-    title = "Contaminació maig 2020–2024",
+    title = "Contaminació atmosfèrica al maig (2020-2024)",
     x = "", y = ""
   ) +
   theme_bw() +
@@ -638,7 +623,60 @@ ggplot(m) +
     legend.box = "vertical",
     strip.background = element_rect(fill = "grey90"),
     strip.text = element_text(size = 10),
-    panel.spacing = unit(0, "lines")
+    panel.spacing = unit(0, "lines"),
+    plot.title = element_text(
+      size = 15
+    )
+  ) +
+  guides(fill = guide_colourbar(title.position = "top"))
+
+
+dpm_setembre <- dpm2 %>%
+  filter(month(date) == 9) %>%
+  mutate(
+    Any = year(date),
+    variable = factor(variable, levels = c("pred_mean", "pred_ll", "pred_ul"))
+  )
+
+ggplot(m) +
+  geom_sf() +
+  coord_sf(datum = NA) +
+  geom_tile(
+    data = dpm_setembre,
+    aes(x = x, y = y, fill = value)
+  ) +
+  facet_grid(
+    rows = vars(Any),
+    cols = vars(variable),
+    labeller = labeller(
+      variable = c(
+        pred_mean = "Contaminació\nmitjana",
+        pred_ll   = "Límit inferior de \ncontaminació\n(IC 95%)",
+        pred_ul   = "Límit superior de \ncontaminació\n(IC 95%)"
+      )
+    )
+  ) +
+  scale_fill_gradientn(
+    name = "Coordenades \ntotal T-space",
+    colours = c("green", "yellow", "red"),
+    limits = c(2,10),
+    breaks = scales::pretty_breaks(n = 5),
+    oob = scales::squish
+  ) +
+  labs(
+    title = "Contaminació atmosfèrica al setembre (2020-2024)",
+    x = "", y = ""
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "right",
+    legend.box = "vertical",
+    strip.background = element_rect(fill = "grey90"),
+    strip.text = element_text(size = 10),
+    panel.spacing = unit(0, "lines"),
+    plot.title = element_text(
+      size = 15
+    )
   ) +
   guides(fill = guide_colourbar(title.position = "top"))
 

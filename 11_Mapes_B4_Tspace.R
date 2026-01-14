@@ -520,8 +520,8 @@ if (!file.exists("prediccio_model_inla_mes_any_b4.rds")) {
   dpm2 <- readRDS("prediccio_model_inla_mes_any_b4.rds")
 }
 
-dpm_gener <- dpm2 %>%
-  filter(month(date) == 1) %>%
+dpm_febrer <- dpm2 %>%
+  filter(month(date) == 2) %>%
   mutate(
     Any = year(date),
     variable = factor(variable, levels = c("pred_mean", "pred_ll", "pred_ul"))
@@ -531,7 +531,7 @@ ggplot(m) +
   geom_sf() +
   coord_sf(datum = NA) +
   geom_tile(
-    data = dpm_gener,
+    data = dpm_febrer,
     aes(x = x, y = y, fill = value)
   ) +
   facet_grid(
@@ -539,9 +539,9 @@ ggplot(m) +
     cols = vars(variable),
     labeller = labeller(
       variable = c(
-        pred_mean = "Mitjana \nContaminació",
-        pred_ll   = "Límit Inf. \n(IC 95%)",
-        pred_ul   = "Límit Sup. \n(IC 95%)"
+        pred_mean = "Mitjana\nbalança 4",
+        pred_ll   = "Límit inferior\n(IC 95%)",
+        pred_ul   = "Límit superior\n(IC 95%)"
       )
     )
   ) +
@@ -553,7 +553,7 @@ ggplot(m) +
     oob = scales::squish
   ) +
   labs(
-    title = "Contaminació gener 2020–2024",
+    title = "Component B4 del T-space al febrer (2020–2024)",
     x = "", y = ""
   ) +
   theme_bw() +
@@ -562,7 +562,10 @@ ggplot(m) +
     legend.box = "vertical",
     strip.background = element_rect(fill = "grey90"),
     strip.text = element_text(size = 10),
-    panel.spacing = unit(0, "lines")
+    panel.spacing = unit(0, "lines"),
+    plot.title = element_text(
+      size = 15
+    )
   ) +
   guides(fill = guide_colourbar(title.position = "top"))
 
@@ -586,9 +589,9 @@ ggplot(m) +
     cols = vars(variable),
     labeller = labeller(
       variable = c(
-        pred_mean = "Mitjana \nContaminació",
-        pred_ll   = "Límit Inf. \n(IC 95%)",
-        pred_ul   = "Límit Sup. \n(IC 95%)"
+        pred_mean = "Mitjana\nbalança 4",
+        pred_ll   = "Límit inferior\n(IC 95%)",
+        pred_ul   = "Límit superior\n(IC 95%)"
       )
     )
   ) +
@@ -600,7 +603,7 @@ ggplot(m) +
     oob = scales::squish
   ) +
   labs(
-    title = "Contaminació setembre 2020–2024",
+    title = "Component B4 del T-space al setembre (2020–2024)",
     x = "", y = ""
   ) +
   theme_bw() +
@@ -609,102 +612,10 @@ ggplot(m) +
     legend.box = "vertical",
     strip.background = element_rect(fill = "grey90"),
     strip.text = element_text(size = 10),
-    panel.spacing = unit(0, "lines")
-  ) +
-  guides(fill = guide_colourbar(title.position = "top"))
-
-
-
-dpm_febrer <- dpm2 %>%
-  filter(month(date) == 2) %>%
-  mutate(
-    Any = year(date),
-    variable = factor(variable, levels = c("pred_mean", "pred_ll", "pred_ul"))
-  )
-
-ggplot(m) +
-  geom_sf() +
-  coord_sf(datum = NA) +
-  geom_tile(
-    data = dpm_febrer,
-    aes(x = x, y = y, fill = value)
-  ) +
-  facet_grid(
-    rows = vars(Any),
-    cols = vars(variable),
-    labeller = labeller(
-      variable = c(
-        pred_mean = "Mitjana \nContaminació",
-        pred_ll   = "Límit Inf. \n(IC 95%)",
-        pred_ul   = "Límit Sup. \n(IC 95%)"
-      )
+    panel.spacing = unit(0, "lines"),
+    plot.title = element_text(
+      size = 15
     )
-  ) +
-  scale_fill_gradientn(
-    name = "Coordenades \nB4 T-space",
-    colours = c("green", "yellow", "red"),
-    limits = c(min(dpm2$value), max(dpm2$value)),
-    breaks = scales::pretty_breaks(n = 5),
-    oob = scales::squish
-  ) +
-  labs(
-    title = "Contaminació febrer 2020–2024",
-    x = "", y = ""
-  ) +
-  theme_bw() +
-  theme(
-    legend.position = "right",
-    legend.box = "vertical",
-    strip.background = element_rect(fill = "grey90"),
-    strip.text = element_text(size = 10),
-    panel.spacing = unit(0, "lines")
-  ) +
-  guides(fill = guide_colourbar(title.position = "top"))
-
-
-dpm_maig <- dpm2 %>%
-  filter(month(date) == 5) %>%
-  mutate(
-    Any = year(date),
-    variable = factor(variable, levels = c("pred_mean", "pred_ll", "pred_ul"))
-  )
-
-ggplot(m) +
-  geom_sf() +
-  coord_sf(datum = NA) +
-  geom_tile(
-    data = dpm_maig,
-    aes(x = x, y = y, fill = value)
-  ) +
-  facet_grid(
-    rows = vars(Any),
-    cols = vars(variable),
-    labeller = labeller(
-      variable = c(
-        pred_mean = "Mitjana \nContaminació",
-        pred_ll   = "Límit Inf. \n(IC 95%)",
-        pred_ul   = "Límit Sup. \n(IC 95%)"
-      )
-    )
-  ) +
-  scale_fill_gradientn(
-    name = "Coordenades \nB4 T-space",
-    colours = c("green", "yellow", "red"),
-    limits = c(min(dpm2$value), max(dpm2$value)),
-    breaks = scales::pretty_breaks(n = 5),
-    oob = scales::squish
-  ) +
-  labs(
-    title = "Contaminació maig 2020–2024",
-    x = "", y = ""
-  ) +
-  theme_bw() +
-  theme(
-    legend.position = "right",
-    legend.box = "vertical",
-    strip.background = element_rect(fill = "grey90"),
-    strip.text = element_text(size = 10),
-    panel.spacing = unit(0, "lines")
   ) +
   guides(fill = guide_colourbar(title.position = "top"))
 
