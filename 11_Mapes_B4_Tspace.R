@@ -606,7 +606,7 @@ ggplot(m) +
     title = "Component B4 del T-space al setembre (2020–2024)",
     x = "", y = ""
   ) +
-  theme_bw() +
+  theme_bw() + 
   theme(
     legend.position = "right",
     legend.box = "vertical",

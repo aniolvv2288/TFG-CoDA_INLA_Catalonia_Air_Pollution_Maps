@@ -605,7 +605,7 @@ ggplot(m) +
   labs(
     title = "Component B5 del T-space al setembre (2020–2024)",
     x = "", y = ""
-  ) +
+  ) + 
   theme_bw() +
   theme(
     legend.position = "right",

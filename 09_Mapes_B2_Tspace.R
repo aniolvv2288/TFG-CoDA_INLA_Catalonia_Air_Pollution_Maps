@@ -335,7 +335,7 @@ plot(resultat.res$marginals.kappa[[1]], type = "l",
 plot(resultat.res$marginals.range.nominal[[1]], type = "l", 
      xlab = "range nominal", ylab = "Density")                   # Distància on les observacions ja no estan correlacionades
 par(mfrow=c(1,1))
-
+ 
 ################################################################################
 # ----- VALIDACIÓ DEL MODEL -----
 ################################################################################
