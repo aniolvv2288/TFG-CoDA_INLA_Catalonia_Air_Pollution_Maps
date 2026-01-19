@@ -651,8 +651,8 @@ ggplot(m) +
     labeller = labeller(
       variable = c(
         pred_mean = "Contaminació\nmitjana",
-        pred_ll   = "Límit inferior de \ncontaminació\n(IC 95%)",
-        pred_ul   = "Límit superior de \ncontaminació\n(IC 95%)"
+        pred_ll   = "Límit inferior\n(IC 95%)",
+        pred_ul   = "Límit superior\n(IC 95%)"
       )
     )
   ) +
